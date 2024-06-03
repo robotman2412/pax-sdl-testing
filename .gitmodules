@@ -1,0 +1,6 @@
+[submodule "pax-graphics"]
+	path = pax-graphics
+	url = https://github.com/robotman2412/pax-graphics
+[submodule "pax-gfx"]
+	path = pax-graphics
+	url = https://robotman2412@github.com/robotman2412/pax-graphics
