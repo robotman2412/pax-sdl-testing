@@ -120,6 +120,9 @@ void draw(pax_buf_t *gfx);
 void resized(pax_buf_t *gfx);
 
 int main(int argc, char **argv) {
+    SDL_version ver;
+    SDL_GetVersion(&ver);
+    printf("SDL%d.%d.%d\n", ver.major, ver.minor, ver.patch);
     // Create the SDL contexts.
     SDL_Init(SDL_INIT_VIDEO);
     window = SDL_CreateWindow(
@@ -133,17 +136,11 @@ int main(int argc, char **argv) {
     if (!window) {
         return 1;
     }
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    if (!renderer) {
-        return 1;
-    }
-    // int res
-    //     = SDL_CreateWindowAndRenderer(400, 300, SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI, &window, &renderer);
-    // SDL_SetWindowTitle(window, "PAX SDL");
 
     {
         int width, height;
-        SDL_GetRendererOutputSize(renderer, &width, &height);
+        SDL_GetWindowSizeInPixels(window, &width, &height);
+        printf("Read size %dx%d\n", width, height);
         pax_buf_init(&gfx, NULL, width, height, PAX_BUF_32_8888ARGB);
     }
     resized(&gfx);
@@ -160,7 +157,7 @@ int main(int argc, char **argv) {
                 if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
                     pax_buf_destroy(&gfx);
                     int width, height;
-                    SDL_GetRendererOutputSize(renderer, &width, &height);
+                    SDL_GetWindowSizeInPixels(window, &width, &height);
                     pax_buf_init(&gfx, NULL, width, height, PAX_BUF_32_8888ARGB);
                     resized(&gfx);
                     draw(&gfx);
