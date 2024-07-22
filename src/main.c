@@ -14,88 +14,24 @@ SDL_Renderer *renderer;
 pax_buf_t     gfx;
 
 
-// Button press callback.
-void on_press(pgui_button_t *button, void *cookie) {
-    printf("%s pressed\n", button->text);
-}
 
-// Dropdown options.
-char const *options[] = {
-    "Thing",
-    "Another",
-    "Third",
-    "Fourth",
-    "Fifth",
-    "Sixth",
-};
+pgui_grid_t root = PGUI_NEW_GRID(
+    10,
+    10,
+    216,
+    100,
+    2,
+    3,
 
-// Children of root object.
-pgui_base_t *root_children[] = {
-    (pgui_base_t *) &(pgui_label_t){
-        .base = {
-            .type  = PGUI_TYPE_LABEL,
-            .flags = PGUI_FLAG_FILLCELL,
-        },
-        .text  = "label 1",
-        .align = PAX_ALIGN_LEFT,
-    },
-    (pgui_base_t *) &(pgui_button_t){
-        .base = {
-            .type  = PGUI_TYPE_BUTTON,
-            .flags = PGUI_FLAG_FILLCELL,
-        },
-        .text = "button 🅰",
-        .callback = on_press,
-    },
-    
-    (pgui_base_t *) &(pgui_label_t){
-        .base = {
-            .type  = PGUI_TYPE_LABEL,
-            .flags = PGUI_FLAG_FILLCELL,
-        },
-        .text  = "label 2",
-        .align = PAX_ALIGN_LEFT,
-    },
-    (pgui_base_t *) &(pgui_button_t){
-        .base = {
-            .type  = PGUI_TYPE_BUTTON,
-            .flags = PGUI_FLAG_FILLCELL,
-        },
-        .text = "button 2",
-        .callback = on_press,
-    },
-    
-    (pgui_base_t *) &(pgui_textbox_t){
-        .base = {
-            .type  = PGUI_TYPE_TEXTBOX,
-            .flags = PGUI_FLAG_FILLCELL,
-        },
-    },
-    (pgui_base_t *) &(pgui_dropdown_t){
-        .base = {
-            .type  = PGUI_TYPE_DROPDOWN,
-            .flags = PGUI_FLAG_FILLCELL,
-        },
-        .options_len = sizeof(options) / sizeof(char const *),
-        .options = options,
-    },
-};
+    &PGUI_NEW_LABEL("This label"),
+    &PGUI_NEW_TEXTBOX(),
 
-// GUI root.
-pgui_grid_t root = {
-    .box = {
-        .base = {
-            .type  = PGUI_TYPE_GRID,
-            .pos   = {10, 10},
-            .flags = PGUI_FLAG_HIGHLIGHT,
-        },
-        .selected     = -1,
-        .children_len = sizeof(root_children) / sizeof(pgui_base_t *),
-        .children     = root_children,
-    },
-    .cell_size = {110, 38},
-    .cells     = {2, 3},
-};
+    &PGUI_NEW_LABEL("This label"),
+    &PGUI_NEW_BUTTON("This button"),
+
+    &PGUI_NEW_LABEL("This label"),
+    &PGUI_NEW_BUTTON("This button")
+);
 
 // Flush the contents of a buffer to the window.
 void window_flush(SDL_Window *window, pax_buf_t *gfx) {
@@ -131,49 +67,35 @@ int main(int argc, char **argv) {
         "PAX SDL",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        400,
-        300,
-        SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI
+        800,
+        480,
+        SDL_WINDOW_ALLOW_HIGHDPI
     );
     if (!window) {
         return 1;
     }
+    resized();
 
-    {
-        int width, height;
-        SDL_GetWindowSizeInPixels(window, &width, &height);
-        pax_buf_init(&gfx, NULL, width, height, PAX_BUF_32_8888ARGB);
-    }
-    resized(&gfx);
-    draw(&gfx);
-    window_flush(window, &gfx);
-
-    bool      lctrl = false;
     SDL_Event event;
     while (1) {
         if (SDL_WaitEvent(&event)) {
-            if (event.type == SDL_QUIT)
+            if (event.type == SDL_QUIT) {
                 break;
-            if (event.type == SDL_WINDOWEVENT) {
-                if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-                    pax_buf_destroy(&gfx);
+            } else if (event.type == SDL_WINDOWEVENT) {
+                if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
                     int width, height;
                     SDL_GetWindowSizeInPixels(window, &width, &height);
-                    pax_buf_init(&gfx, NULL, width, height, PAX_BUF_32_8888ARGB);
-                    resized(&gfx);
-                    draw(&gfx);
-                    window_flush(window, &gfx);
+                    if (abs(width - 800) > 2 || abs(height - 480) > 2) {
+                        pax_buf_destroy(&gfx);
+                        resized();
+                    }
                 }
-            }
-            if (event.type == SDL_KEYDOWN && !event.key.repeat) {
-                if (event.key.keysym.sym == SDLK_LCTRL)
-                    lctrl = true;
-                if (event.key.keysym.sym == SDLK_q && lctrl)
+            } else if (event.type == SDL_KEYDOWN && !event.key.repeat) {
+                if (event.key.keysym.sym == SDLK_q && (event.key.keysym.mod & KMOD_CTRL)) {
                     break;
-            }
-            if (event.type == SDL_KEYUP) {
-                if (event.key.keysym.sym == SDLK_LCTRL)
-                    lctrl = false;
+                }
+            } else if (event.type != SDL_KEYUP) {
+                continue;
             }
 
             // Translate to PAX GUI input.
@@ -190,6 +112,10 @@ int main(int argc, char **argv) {
                 case SDLK_DOWN: p_input = PGUI_INPUT_DOWN; break;
                 case SDLK_LEFT: p_input = PGUI_INPUT_LEFT; break;
                 case SDLK_RIGHT: p_input = PGUI_INPUT_RIGHT; break;
+                case SDLK_PAGEUP: p_input = PGUI_INPUT_PGUP; break;
+                case SDLK_PAGEDOWN: p_input = PGUI_INPUT_PGDN; break;
+                case SDLK_HOME: p_input = PGUI_INPUT_HOME; break;
+                case SDLK_END: p_input = PGUI_INPUT_END; break;
             }
             // Translate to PAX GUI event.
             pgui_event_type_t p_type;
@@ -239,18 +165,21 @@ int main(int argc, char **argv) {
                 continue;
             }
             pgui_resp_t resp = pgui_event(
-                &root.base,
+                pax_buf_get_dims(&gfx),
+                (pgui_elem_t *)&root,
+                NULL,
                 (pgui_event_t){
-                    .type  = p_type,
-                    .input = p_input,
-                    .value = p_value,
+                    .type    = p_type,
+                    .input   = p_input,
+                    .value   = p_value,
+                    .modkeys = event.key.keysym.mod,
                 }
             );
             if (resp) {
                 if (root.base.flags & PGUI_FLAG_DIRTY) {
                     pax_background(&gfx, pgui_theme_default.bg_col);
                 }
-                pgui_redraw(&gfx, &root.base, NULL);
+                pgui_redraw(&gfx, (pgui_elem_t *)&root, NULL);
                 window_flush(window, &gfx);
             }
             if (resp == PGUI_RESP_CAPTURED_ERR) {
@@ -269,12 +198,18 @@ int main(int argc, char **argv) {
 void draw() {
     pax_background(&gfx, pgui_theme_default.bg_col);
     pax_reset_2d(&gfx, PAX_RESET_ALL);
-    pgui_draw(&gfx, &root.base, NULL);
+    pgui_draw(&gfx, (pgui_elem_t *)&root, NULL);
 }
 
 // Update the layout.
 void resized() {
-    root.base.size.x = pax_buf_get_width(&gfx) - 20;
-    root.base.size.y = pax_buf_get_height(&gfx) - 20;
-    pgui_calc_layout(&root.base, NULL);
+    int width, height, fake_width, fake_height;
+    SDL_GetWindowSizeInPixels(window, &width, &height);
+    SDL_GetWindowSize(window, &fake_width, &fake_height);
+    SDL_SetWindowSize(window, 800 * fake_width / width, 480 * fake_height / height);
+    SDL_GetWindowSizeInPixels(window, &width, &height);
+    pax_buf_init(&gfx, NULL, width, height, PAX_BUF_32_8888ARGB);
+    pgui_calc_layout(pax_buf_get_dims(&gfx), (pgui_elem_t *)&root, NULL);
+    draw(&gfx);
+    window_flush(window, &gfx);
 }
