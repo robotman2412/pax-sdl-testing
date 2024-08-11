@@ -3,7 +3,6 @@
 
 #include <assert.h>
 #include <pax_gfx.h>
-#include <pax_gui.h>
 #include <SDL.h>
 #include <sys/time.h>
 
@@ -26,6 +25,7 @@ uint64_t      start_micros, last_micros;
 
 
 #if MODE == GUI
+    #include <pax_gui.h>
 pgui_grid_t root = PGUI_NEW_GRID(
     10,
     10,
@@ -301,11 +301,12 @@ void arcs_draw(int num_arcs, float arc_dx) {
 
 // Draw the graphics.
 void draw() {
-    pax_background(gfx, pgui_theme_default.bg_col);
     pax_reset_2d(gfx, PAX_RESET_ALL);
 #if MODE == GUI
+    pax_background(gfx, pgui_theme_default.bg_col);
     pgui_draw(gfx, (pgui_elem_t *)&root, NULL);
 #elif MODE == OLDDEMO
+    pax_background(gfx, 0);
     arcs_draw(10, 60);
 #endif
 }
@@ -320,7 +321,14 @@ void resized() {
     SDL_SetWindowSize(window, 800 * fake_width / width, 480 * fake_height / height);
 #endif
     SDL_GetWindowSizeInPixels(window, &width, &height);
+#if PAX_VERSION_MAJOR < 2
+    if (!gfx) {
+        gfx = malloc(sizeof(pax_buf_t));
+    }
+    pax_buf_init(gfx, NULL, width, height, PAX_BUF_32_8888ARGB);
+#else
     gfx = pax_buf_init(NULL, width, height, PAX_BUF_32_8888_ARGB);
+#endif
 #if MODE == GUI
     pgui_calc_layout(pax_buf_get_dims(gfx), (pgui_elem_t *)&root, NULL);
 #endif
