@@ -6,7 +6,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
 project(pax-sdl)
 set(target pax-sdl)
-add_compile_options(-ggdb -O2)
 
 find_package(SDL2 REQUIRED)
 add_subdirectory(pax-graphics)
@@ -16,5 +15,6 @@ add_executable(${target}
 )
 
 include_directories(${target} ${SDL2_INCLUDE_DIRS})
-target_link_libraries(${target} ${SDL2_LIBRARIES})
-target_link_libraries(${target} pax_graphics)
+target_compile_options(${target} PUBLIC -ggdb -O2)
+target_link_libraries(${target} PUBLIC ${SDL2_LIBRARIES})
+target_link_libraries(${target} PUBLIC pax_gfx pax_gui)
