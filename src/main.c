@@ -327,7 +327,7 @@ void resized() {
     }
     pax_buf_init(gfx, NULL, width, height, PAX_BUF_32_8888ARGB);
 #else
-    gfx = pax_buf_init(NULL, width, height, PAX_BUF_32_8888_ARGB);
+    gfx = pax_buf_init(NULL, width, height, PAX_BUF_32_8888ARGB);
 #endif
 #if MODE == GUI
     pgui_calc_layout(pax_buf_get_dims(gfx), (pgui_elem_t *)&root, NULL);
