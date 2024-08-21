@@ -17,7 +17,7 @@ uint64_t      start_micros, last_micros;
 
 #define GUI             0
 #define OLDDEMO         1
-#define MODE            OLDDEMO
+#define MODE            GUI
 #define OPAQUE          false
 #define RESIZABLE       true
 #define FRAMETIME_COUNT 128
@@ -38,7 +38,7 @@ pgui_grid_t root = PGUI_NEW_GRID(
     &PGUI_NEW_TEXTBOX(),
 
     &PGUI_NEW_LABEL("This label"),
-    &PGUI_NEW_BUTTON("This button"),
+    &PGUI_NEW_DROPDOWN(4, &PGUI_NEW_LABEL("A"), &PGUI_NEW_LABEL("B"), &PGUI_NEW_LABEL("C"), &PGUI_NEW_LABEL("D")),
 
     &PGUI_NEW_LABEL("This label"),
     &PGUI_NEW_BUTTON("This button")
