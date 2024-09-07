@@ -26,23 +26,7 @@ uint64_t      start_micros, last_micros;
 
 #if MODE == GUI
     #include <pax_gui.h>
-pgui_grid_t root = PGUI_NEW_GRID(
-    10,
-    10,
-    216,
-    100,
-    2,
-    3,
-
-    &PGUI_NEW_LABEL("This label"),
-    &PGUI_NEW_TEXTBOX(),
-
-    &PGUI_NEW_LABEL("This label"),
-    &PGUI_NEW_DROPDOWN(4, &PGUI_NEW_LABEL("A"), &PGUI_NEW_LABEL("B"), &PGUI_NEW_LABEL("C"), &PGUI_NEW_LABEL("D")),
-
-    &PGUI_NEW_LABEL("This label"),
-    &PGUI_NEW_BUTTON("This button")
-);
+pgui_elem_t *root;
 #endif
 
 uint64_t micros() {
@@ -57,7 +41,7 @@ void window_flush(SDL_Window *window, pax_buf_t *gfx) {
     static int          tw, th;
     SDL_Surface        *surface = SDL_GetWindowSurface(window);
 
-    if (surface->w == pax_buf_get_width(gfx) && surface->h == pax_buf_get_height(gfx)) {
+    if (surface->w == pax_buf_get_width_raw(gfx) && surface->h == pax_buf_get_height_raw(gfx)) {
         // Direct surface update.
         SDL_LockSurface(surface);
         memcpy(surface->pixels, pax_buf_get_pixels(gfx), pax_buf_get_size(gfx));
@@ -109,6 +93,10 @@ int main(int argc, char **argv) {
     printf("SDL%d.%d.%d\n", ver.major, ver.minor, ver.patch);
 #ifdef SDL_HINT_VIDEODRIVER
     SDL_SetHint(SDL_HINT_VIDEODRIVER, "wayland");
+#endif
+
+#if MODE == GUI
+    root = pgui_new_button("This button", NULL);
 #endif
 
     // Create the SDL contexts.
@@ -211,7 +199,7 @@ int main(int argc, char **argv) {
             }
             pgui_resp_t resp = pgui_event(
                 pax_buf_get_dims(gfx),
-                (pgui_elem_t *)&root,
+                root,
                 NULL,
                 (pgui_event_t){
                     .type    = p_type,
@@ -221,10 +209,10 @@ int main(int argc, char **argv) {
                 }
             );
             if (resp) {
-                if (root.base.flags & PGUI_FLAG_DIRTY) {
-                    pax_background(gfx, pgui_theme_default.bg_col);
+                if (pgui_get_flags(root) & PGUI_FLAG_DIRTY) {
+                    pax_background(gfx, pgui_get_default_theme()->palette[PGUI_VARIANT_DEFAULT].bg_col);
                 }
-                pgui_redraw(gfx, (pgui_elem_t *)&root, NULL);
+                pgui_redraw(gfx, root, NULL);
                 window_flush(window, gfx);
             }
             if (resp == PGUI_RESP_CAPTURED_ERR) {
@@ -303,8 +291,8 @@ void arcs_draw(int num_arcs, float arc_dx) {
 void draw() {
     pax_reset_2d(gfx, PAX_RESET_ALL);
 #if MODE == GUI
-    pax_background(gfx, pgui_theme_default.bg_col);
-    pgui_draw(gfx, (pgui_elem_t *)&root, NULL);
+    pax_background(gfx, pgui_get_default_theme()->palette[PGUI_VARIANT_DEFAULT].bg_col);
+    pgui_draw(gfx, root, NULL);
 #elif MODE == OLDDEMO
     pax_background(gfx, 0);
     arcs_draw(10, 60);
@@ -330,7 +318,7 @@ void resized() {
     gfx = pax_buf_init(NULL, width, height, PAX_BUF_32_8888ARGB);
 #endif
 #if MODE == GUI
-    pgui_calc_layout(pax_buf_get_dims(gfx), (pgui_elem_t *)&root, NULL);
+    pgui_calc_layout(pax_buf_get_dims(gfx), root, NULL);
 #endif
     draw(gfx);
     window_flush(window, gfx);
