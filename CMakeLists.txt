@@ -8,6 +8,8 @@ project(pax-sdl)
 set(target pax-sdl)
 
 find_package(SDL2 REQUIRED)
+set(PAX_STATIC true)
+add_compile_options(-ggdb -O2)
 add_subdirectory(pax-graphics)
 
 add_executable(${target}
@@ -15,7 +17,6 @@ add_executable(${target}
 )
 
 include_directories(${target} ${SDL2_INCLUDE_DIRS})
-target_compile_options(${target} PUBLIC -ggdb -O2)
 target_link_libraries(${target} PUBLIC ${SDL2_LIBRARIES})
 if(DEFINED PAX_VERSION_MAJOR)
     target_link_libraries(${target} PUBLIC pax_gfx pax_gui)

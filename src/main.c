@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <pax_gfx.h>
+#include <renderer/pax_renderer_softasync.h>
 #include <SDL.h>
 #include <sys/time.h>
 
@@ -17,7 +18,8 @@ uint64_t      start_micros, last_micros;
 
 #define GUI             0
 #define OLDDEMO         1
-#define MODE            GUI
+#define TONSOFTEXT      2
+#define MODE            OLDDEMO
 #define OPAQUE          false
 #define RESIZABLE       true
 #define FRAMETIME_COUNT 128
@@ -98,6 +100,9 @@ int main(int argc, char **argv) {
 #if MODE == GUI
     root = pgui_new_button("This button", NULL);
 #endif
+
+    // Set renderer.
+    pax_set_renderer(&pax_render_engine_softasync, (void *)1);
 
     // Create the SDL contexts.
     SDL_Init(SDL_INIT_VIDEO);
@@ -222,7 +227,7 @@ int main(int argc, char **argv) {
         } else {
             break;
         }
-#elif MODE == OLDDEMO
+#else
         if (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 break;
@@ -287,6 +292,39 @@ void arcs_draw(int num_arcs, float arc_dx) {
 }
 #endif
 
+#if MODE == TONSOFTEXT
+static char const              le_text[]  = "This is a bit of text repeated very often.";
+static pax_font_t const *const le_fonts[] = {
+    pax_font_sky,
+    pax_font_marker,
+    pax_font_saira_condensed,
+};
+static size_t const le_fonts_len = sizeof(le_fonts) / sizeof(*le_fonts);
+static int          total_height;
+
+void calc_total_height() {
+    total_height = 0;
+    for (size_t i = 0; i < le_fonts_len; i++) {
+        total_height += le_fonts[i]->default_size;
+    }
+}
+
+void le_text_draw_line(pax_col_t color, int x, int y) {
+    for (size_t i = 0; i < le_fonts_len; i++) {
+        pax_draw_text(gfx, color, le_fonts[i], le_fonts[i]->default_size, x, y, le_text);
+        y += le_fonts[i]->default_size;
+    }
+}
+
+void le_text_draw(pax_col_t color, int x, int y) {
+    int height = pax_buf_get_height(gfx);
+    int count  = (int)ceilf(height / total_height) + 2;
+    for (int i = 0; i < count; i++) {
+        le_text_draw_line(color, x, i * total_height - y);
+    }
+}
+#endif
+
 // Draw the graphics.
 void draw() {
     pax_reset_2d(gfx, PAX_RESET_ALL);
@@ -296,6 +334,24 @@ void draw() {
 #elif MODE == OLDDEMO
     pax_background(gfx, 0);
     arcs_draw(10, 60);
+#elif MODE == TONSOFTEXT
+    uint64_t now_us = micros();
+
+    static int y = 0;
+    pax_background(gfx, 0);
+    calc_total_height();
+    int count = 8;
+    for (int i = 0; i < count; i++) {
+        le_text_draw(pax_col_ahsv(128 + 127 * i / count, 255 * i / count, 255, 255), count - i - 1, count - i - 1 + y);
+    }
+    y = (y + 1) % total_height;
+
+    // Make an FPS counter.
+    char temp[32];
+    snprintf(temp, 31, "%6.1f FPS\n", push_frametime(now_us - last_micros));
+    // fputs(temp, stdout);
+    pax_draw_text(gfx, 0xffffffff, pax_font_sky_mono, 36, 5, 5, temp);
+    last_micros = now_us;
 #endif
 }
 
