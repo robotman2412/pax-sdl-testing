@@ -19,7 +19,8 @@ uint64_t      start_micros, last_micros;
 #define GUI             0
 #define OLDDEMO         1
 #define TONSOFTEXT      2
-#define MODE            OLDDEMO
+#define SPRITES         3
+#define MODE            SPRITES
 #define OPAQUE          false
 #define RESIZABLE       true
 #define FRAMETIME_COUNT 128
@@ -271,6 +272,10 @@ void arcs_draw(int num_arcs, float arc_dx) {
         pax_push_2d(gfx);
         pax_apply_2d(gfx, matrix_2d_translate(1, 0));
         pax_draw_rect(gfx, color1, -0.25f, -0.25f, 0.5f, 0.5f);
+        pax_draw_thick_line(gfx, color0, -0.25f, -0.25f, -0.25f, 0.25f, 0.05f);
+        pax_draw_thick_line(gfx, color0, -0.25f, 0.25f, 0.25f, 0.25f, 0.05f);
+        pax_draw_thick_line(gfx, color0, 0.25f, 0.25f, 0.25f, -0.25f, 0.05f);
+        pax_draw_thick_line(gfx, color0, 0.25f, -0.25f, -0.25f, -0.25f, 0.05f);
         pax_pop_2d(gfx);
 
         pax_apply_2d(gfx, matrix_2d_rotate(a1));
@@ -278,6 +283,9 @@ void arcs_draw(int num_arcs, float arc_dx) {
         pax_apply_2d(gfx, matrix_2d_translate(1, 0));
         pax_apply_2d(gfx, matrix_2d_rotate(-a0 - a1 + M_PI * 0.5));
         pax_draw_tri(gfx, color1, 0.25f, 0.0f, -0.125f, 0.2165f, -0.125f, -0.2165f);
+        pax_draw_thick_line(gfx, color0, 0.25f, 0.0f, -0.125f, 0.2165f, 0.05f);
+        pax_draw_thick_line(gfx, color0, -0.125f, 0.2165f, -0.125f, -0.2165f, 0.05f);
+        pax_draw_thick_line(gfx, color0, -0.125f, -0.2165f, 0.25f, 0.0f, 0.05f);
         pax_pop_2d(gfx);
 
         pax_pop_2d(gfx);
@@ -325,6 +333,34 @@ void le_text_draw(pax_col_t color, int x, int y) {
 }
 #endif
 
+#if MODE == SPRITES
+pax_buf_t *the_sprite;
+
+void sprites_init() {
+    the_sprite = pax_buf_init(NULL, 20, 20, PAX_BUF_32_8888ARGB);
+    pax_background(the_sprite, 0x00ff00ff);
+    pax_draw_circle(the_sprite, 0x7fff00ff, 10, 10, 10);
+    pax_draw_circle(the_sprite, 0xffcf00cf, 10, 10, 6);
+    pax_draw_text_adv(the_sprite, 0xff00ff00, pax_font_sky, 9, 10, 5, "the", 3, PAX_ALIGN_CENTER, PAX_ALIGN_BEGIN, -1);
+    pax_outline_rect(the_sprite, 0xffffffff, 0, 0, 19, 19);
+    pax_join();
+}
+
+void sprites_draw() {
+    static bool did_init = false;
+    if (!did_init) {
+        sprites_init();
+        did_init = true;
+    }
+    for (int i = 0; i < 8; i++) {
+        pax_blit_rot(gfx, the_sprite, 5 + 20 * i, 5, i);
+        pax_draw_sprite_rot(gfx, the_sprite, 5 + 20 * i, 30, i);
+        pax_blit_raw_rot(gfx, pax_buf_get_pixels(the_sprite), (pax_vec2i){20, 20}, 5 + 20 * i, 55, i);
+    }
+    pax_draw_image(gfx, the_sprite, 5, 80);
+}
+#endif
+
 // Draw the graphics.
 void draw() {
     pax_reset_2d(gfx, PAX_RESET_ALL);
@@ -352,6 +388,8 @@ void draw() {
     // fputs(temp, stdout);
     pax_draw_text(gfx, 0xffffffff, pax_font_sky_mono, 36, 5, 5, temp);
     last_micros = now_us;
+#elif MODE == SPRITES
+    sprites_draw();
 #endif
 }
 
