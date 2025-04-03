@@ -3,9 +3,12 @@
 
 #include <assert.h>
 #include <pax_gfx.h>
-#include <renderer/pax_renderer_softasync.h>
 #include <SDL.h>
 #include <sys/time.h>
+
+#if PAX_VERSION_MAJOR >= 2
+    #include <renderer/pax_renderer_softasync.h>
+#endif
 
 // SDL window.
 SDL_Window   *window;
@@ -20,7 +23,7 @@ uint64_t      start_micros, last_micros;
 #define OLDDEMO         1
 #define TONSOFTEXT      2
 #define SPRITES         3
-#define MODE            SPRITES
+#define MODE            TONSOFTEXT
 #define OPAQUE          false
 #define RESIZABLE       true
 #define FRAMETIME_COUNT 128
@@ -43,8 +46,17 @@ void window_flush(SDL_Window *window, pax_buf_t *gfx) {
     static SDL_Texture *texture = NULL;
     static int          tw, th;
     SDL_Surface        *surface = SDL_GetWindowSurface(window);
+    pax_join();
+    int pw, ph;
+#if PAX_VERSION_MAJOR >= 2
+    pw = pax_buf_get_width_raw(gfx);
+    ph = pax_buf_get_height_raw(gfx);
+#else
+    pw = gfx->width;
+    ph = gfx->height;
+#endif
 
-    if (surface->w == pax_buf_get_width_raw(gfx) && surface->h == pax_buf_get_height_raw(gfx)) {
+    if (surface->w == pw && surface->h == ph) {
         // Direct surface update.
         SDL_LockSurface(surface);
         memcpy(surface->pixels, pax_buf_get_pixels(gfx), pax_buf_get_size(gfx));
@@ -76,6 +88,7 @@ float    push_frametime(uint64_t time) {
 
 void check_resize(SDL_Event event) {
 #if RESIZABLE
+    pax_join();
     pax_buf_destroy(gfx);
     resized();
 #else
@@ -103,7 +116,9 @@ int main(int argc, char **argv) {
 #endif
 
     // Set renderer.
+#if PAX_VERSION_MAJOR >= 2
     pax_set_renderer(&pax_render_engine_softasync, (void *)1);
+#endif
 
     // Create the SDL contexts.
     SDL_Init(SDL_INIT_VIDEO);
@@ -227,6 +242,14 @@ int main(int argc, char **argv) {
 
         } else {
             break;
+        }
+#elif MODE == SPRITES
+        if (SDL_WaitEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                break;
+            } else if (event.type == SDL_WINDOWEVENT) {
+                check_resize(event);
+            }
         }
 #else
         if (SDL_PollEvent(&event)) {
