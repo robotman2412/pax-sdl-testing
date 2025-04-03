@@ -85,7 +85,11 @@ float    push_frametime(uint64_t time) {
 void check_resize(SDL_Event event) {
 #if RESIZABLE
     pax_join();
+    #if PAX_HAS_PAX_BUF_NEW
+    pax_buf_delete(gfx);
+    #else
     pax_buf_destroy(gfx);
+    #endif
     resized();
 #else
     if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
@@ -427,6 +431,8 @@ void resized() {
         gfx = malloc(sizeof(pax_buf_t));
     }
     pax_buf_init(gfx, NULL, width, height, PAX_BUF_32_8888ARGB);
+#elif PAX_HAS_PAX_BUF_NEW
+    gfx = pax_buf_new(NULL, width, height, PAX_BUF_32_8888ARGB);
 #else
     gfx = pax_buf_init(NULL, width, height, PAX_BUF_32_8888ARGB);
 #endif
