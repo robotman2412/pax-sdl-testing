@@ -6,10 +6,6 @@
 #include <SDL.h>
 #include <sys/time.h>
 
-#if PAX_VERSION_MAJOR >= 2
-    #include <renderer/pax_renderer_softasync.h>
-#endif
-
 // SDL window.
 SDL_Window   *window;
 // SDL renderer.
@@ -117,7 +113,7 @@ int main(int argc, char **argv) {
 
     // Set renderer.
 #if PAX_VERSION_MAJOR >= 2
-    pax_set_renderer(&pax_render_engine_softasync, (void *)1);
+    pax_set_renderer_async(true);
 #endif
 
     // Create the SDL contexts.
