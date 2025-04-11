@@ -39,9 +39,7 @@ uint64_t micros() {
 
 // Flush the contents of a buffer to the window.
 void window_flush(SDL_Window *window, pax_buf_t *gfx) {
-    static SDL_Texture *texture = NULL;
-    static int          tw, th;
-    SDL_Surface        *surface = SDL_GetWindowSurface(window);
+    SDL_Surface *surface = SDL_GetWindowSurface(window);
     pax_join();
     int pw, ph;
 #if PAX_VERSION_MAJOR >= 2
@@ -84,6 +82,7 @@ float    push_frametime(uint64_t time) {
 
 void check_resize(SDL_Event event) {
 #if RESIZABLE
+    (void)event;
     pax_join();
     #if PAX_HAS_PAX_BUF_NEW
     pax_buf_delete(gfx);
@@ -104,6 +103,8 @@ void check_resize(SDL_Event event) {
 }
 
 int main(int argc, char **argv) {
+    (void)argc;
+    (void)argv;
     SDL_version ver;
     SDL_GetVersion(&ver);
     printf("SDL%d.%d.%d\n", ver.major, ver.minor, ver.patch);
@@ -439,6 +440,6 @@ void resized() {
 #if MODE == GUI
     pgui_calc_layout(pax_buf_get_dims(gfx), root, NULL);
 #endif
-    draw(gfx);
+    draw();
     window_flush(window, gfx);
 }

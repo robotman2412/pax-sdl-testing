@@ -9,7 +9,7 @@ set(target pax-sdl)
 
 find_package(SDL2 REQUIRED)
 set(PAX_STATIC true)
-add_compile_options(-ggdb -O2)
+add_compile_options(-ggdb -O2 -Wall -Werror=all -Werror=extra)
 add_subdirectory(pax-graphics)
 
 add_executable(${target}
