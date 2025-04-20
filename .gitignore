@@ -1,4 +1,5 @@
 .vscode
+.cache
 build
 pax-playground
 __PYCACHE__

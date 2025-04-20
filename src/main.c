@@ -1,6 +1,8 @@
 
 // SPDX-License-Identidier: MIT
 
+#include "pax_types.h"
+
 #include <assert.h>
 #include <pax_gfx.h>
 #include <SDL.h>
@@ -19,7 +21,7 @@ uint64_t      start_micros, last_micros;
 #define OLDDEMO         1
 #define TONSOFTEXT      2
 #define SPRITES         3
-#define MODE            TONSOFTEXT
+#define MODE            SPRITES
 #define OPAQUE          false
 #define RESIZABLE       true
 #define FRAMETIME_COUNT 128
@@ -361,7 +363,14 @@ void le_text_draw(pax_col_t color, int x, int y) {
 pax_buf_t *the_sprite;
 
 void sprites_init() {
+    #if PAX_VERSION_MAJOR < 2
+    the_sprite = malloc(sizeof(pax_buf_t));
+    pax_buf_init(the_sprite, NULL, 20, 20, PAX_BUF_32_8888ARGB);
+    #elif PAX_HAS_PAX_BUF_NEW
+    the_sprite = pax_buf_new(NULL, 20, 20, PAX_BUF_32_8888ARGB);
+    #else
     the_sprite = pax_buf_init(NULL, 20, 20, PAX_BUF_32_8888ARGB);
+    #endif
     pax_background(the_sprite, 0x00ff00ff);
     pax_draw_circle(the_sprite, 0x7fff00ff, 10, 10, 10);
     pax_draw_circle(the_sprite, 0xffcf00cf, 10, 10, 6);
@@ -437,6 +446,7 @@ void resized() {
 #else
     gfx = pax_buf_init(NULL, width, height, PAX_BUF_32_8888ARGB);
 #endif
+    pax_buf_set_orientation(gfx, PAX_O_FLIP_V);
 #if MODE == GUI
     pgui_calc_layout(pax_buf_get_dims(gfx), root, NULL);
 #endif
