@@ -21,7 +21,7 @@ uint64_t      start_micros, last_micros;
 #define OLDDEMO         1
 #define TONSOFTEXT      2
 #define SPRITES         3
-#define MODE            SPRITES
+#define MODE            TONSOFTEXT
 #define OPAQUE          false
 #define RESIZABLE       true
 #define FRAMETIME_COUNT 128
@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
 
     // Set renderer.
 #if PAX_VERSION_MAJOR >= 2
-    pax_set_renderer_async(true);
+    // pax_set_renderer_async(true);
 #endif
 
     // Create the SDL contexts.
@@ -446,7 +446,7 @@ void resized() {
 #else
     gfx = pax_buf_init(NULL, width, height, PAX_BUF_32_8888ARGB);
 #endif
-    pax_buf_set_orientation(gfx, PAX_O_FLIP_V);
+    // pax_buf_set_orientation(gfx, PAX_O_FLIP_V);
 #if MODE == GUI
     pgui_calc_layout(pax_buf_get_dims(gfx), root, NULL);
 #endif
