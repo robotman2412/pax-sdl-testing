@@ -436,16 +436,10 @@ void resized() {
     SDL_SetWindowSize(window, 800 * fake_width / width, 480 * fake_height / height);
 #endif
     SDL_GetWindowSizeInPixels(window, &width, &height);
-#if PAX_VERSION_MAJOR < 2
     if (!gfx) {
         gfx = malloc(sizeof(pax_buf_t));
     }
     pax_buf_init(gfx, NULL, width, height, PAX_BUF_32_8888ARGB);
-#elif PAX_HAS_PAX_BUF_NEW
-    gfx = pax_buf_new(NULL, width, height, PAX_BUF_32_8888ARGB);
-#else
-    gfx = pax_buf_init(NULL, width, height, PAX_BUF_32_8888ARGB);
-#endif
     // pax_buf_set_orientation(gfx, PAX_O_FLIP_V);
 #if MODE == GUI
     pgui_calc_layout(pax_buf_get_dims(gfx), root, NULL);
