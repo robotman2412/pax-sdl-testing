@@ -1,6 +1,8 @@
 
 // SPDX-License-Identidier: MIT
 
+#include "pax_fonts.h"
+#include "pax_text.h"
 #include "pax_types.h"
 
 #include <assert.h>
@@ -21,6 +23,7 @@ uint64_t      start_micros, last_micros;
 #define OLDDEMO         1
 #define TONSOFTEXT      2
 #define SPRITES         3
+#define IMAGETEST       4
 #define MODE            TONSOFTEXT
 #define OPAQUE          false
 #define RESIZABLE       true
@@ -31,6 +34,10 @@ uint64_t      start_micros, last_micros;
 #if MODE == GUI
     #include <pax_gui.h>
 pgui_elem_t *root;
+#elif MODE == IMAGETEST
+static pax_buf_t test_a = {0};
+static pax_buf_t test_b = {0};
+static pax_buf_t test_c = {0};
 #endif
 
 uint64_t micros() {
@@ -138,6 +145,15 @@ int main(int argc, char **argv) {
     }
     last_micros = start_micros = micros();
     resized();
+
+#if MODE == IMAGETEST
+    pax_buf_init(&test_a, NULL, 50, 50, PAX_BUF_32_8888ARGB);
+    pax_background(&test_a, 0xFFFF0000);
+    pax_buf_init(&test_b, NULL, 50, 50, PAX_BUF_24_888RGB);
+    pax_background(&test_b, 0xFF00FF00);
+    pax_buf_init(&test_c, NULL, 50, 50, PAX_BUF_16_565RGB);
+    pax_background(&test_c, 0xFF0000FF);
+#endif
 
     SDL_Event event;
     while (1) {
@@ -339,14 +355,14 @@ static int          total_height;
 void calc_total_height() {
     total_height = 0;
     for (size_t i = 0; i < le_fonts_len; i++) {
-        total_height += le_fonts[i]->default_size;
+        total_height += le_fonts[i]->default_size * 3;
     }
 }
 
 void le_text_draw_line(pax_col_t color, int x, int y) {
     for (size_t i = 0; i < le_fonts_len; i++) {
-        pax_draw_text(gfx, color, le_fonts[i], le_fonts[i]->default_size, x, y, le_text);
-        y += le_fonts[i]->default_size;
+        pax_draw_text(gfx, color, le_fonts[i], le_fonts[i]->default_size * 3, x, y, le_text);
+        y += le_fonts[i]->default_size * 3;
     }
 }
 
@@ -363,14 +379,8 @@ void le_text_draw(pax_col_t color, int x, int y) {
 pax_buf_t *the_sprite;
 
 void sprites_init() {
-    #if PAX_VERSION_MAJOR < 2
     the_sprite = malloc(sizeof(pax_buf_t));
     pax_buf_init(the_sprite, NULL, 20, 20, PAX_BUF_32_8888ARGB);
-    #elif PAX_HAS_PAX_BUF_NEW
-    the_sprite = pax_buf_new(NULL, 20, 20, PAX_BUF_32_8888ARGB);
-    #else
-    the_sprite = pax_buf_init(NULL, 20, 20, PAX_BUF_32_8888ARGB);
-    #endif
     pax_background(the_sprite, 0x00ff00ff);
     pax_draw_circle(the_sprite, 0x7fff00ff, 10, 10, 10);
     pax_draw_circle(the_sprite, 0xffcf00cf, 10, 10, 6);
@@ -380,6 +390,7 @@ void sprites_init() {
 }
 
 void sprites_draw() {
+    pax_background(gfx, 0);
     static bool did_init = false;
     if (!did_init) {
         sprites_init();
@@ -423,6 +434,19 @@ void draw() {
     last_micros = now_us;
 #elif MODE == SPRITES
     sprites_draw();
+#elif MODE == IMAGETEST
+    pax_background(gfx, 0);
+    uint64_t now_s = micros() / 1000000;
+    if (now_s % 3 == 0) {
+        pax_draw_image(gfx, &test_a, 0, 0);
+    } else if (now_s % 3 == 1) {
+        pax_draw_image(gfx, &test_b, 0, 0);
+    } else if (now_s % 3 == 2) {
+        pax_draw_image(gfx, &test_c, 0, 0);
+    }
+    char buf[8];
+    snprintf(buf, sizeof(buf), "%" PRId64, now_s % 3);
+    pax_draw_text(gfx, 0xffffffff, pax_font_sky, 18, 10, 10, buf);
 #endif
 }
 
@@ -440,7 +464,6 @@ void resized() {
         gfx = malloc(sizeof(pax_buf_t));
     }
     pax_buf_init(gfx, NULL, width, height, PAX_BUF_32_8888ARGB);
-    // pax_buf_set_orientation(gfx, PAX_O_FLIP_V);
 #if MODE == GUI
     pgui_calc_layout(pax_buf_get_dims(gfx), root, NULL);
 #endif
