@@ -4,6 +4,7 @@
 #include "pax_fonts.h"
 #include "pax_text.h"
 #include "pax_types.h"
+#include "shapes/pax_misc.h"
 
 #include <assert.h>
 #include <pax_gfx.h>
@@ -16,6 +17,8 @@ SDL_Window   *window;
 SDL_Renderer *renderer;
 // PAX graphics context.
 pax_buf_t    *gfx;
+// Secondary buffer for conversion test.
+pax_buf_t    *convbuf;
 // Timekeeping.
 uint64_t      start_micros, last_micros;
 
@@ -24,11 +27,13 @@ uint64_t      start_micros, last_micros;
 #define TONSOFTEXT      2
 #define SPRITES         3
 #define IMAGETEST       4
-#define MODE            TONSOFTEXT
+#define MODE            GUI
 #define OPAQUE          false
 #define RESIZABLE       true
 #define FRAMETIME_COUNT 128
 
+// Set to a framebuffer type to test conversion between types of buffer.
+#define BUFCONV_TEST PAX_BUF_2_GREY
 
 
 #if MODE == GUI
@@ -47,22 +52,35 @@ uint64_t micros() {
 }
 
 // Flush the contents of a buffer to the window.
-void window_flush(SDL_Window *window, pax_buf_t *gfx) {
+void window_flush(SDL_Window *window) {
+    pax_buf_t *todraw;
+#ifdef BUFCONV_TEST
+    pax_join();
+    #if PAX_VERSION_NUMBER >= 206
+    pax_draw_sprite(convbuf, gfx, 0, 0);
+    #else
+    pax_draw_image(convbuf, gfx, 0, 0);
+    #endif
+    todraw = convbuf;
+#else
+    todraw = gfx;
+#endif
+
     SDL_Surface *surface = SDL_GetWindowSurface(window);
     pax_join();
     int pw, ph;
 #if PAX_VERSION_MAJOR >= 2
-    pw = pax_buf_get_width_raw(gfx);
-    ph = pax_buf_get_height_raw(gfx);
+    pw = pax_buf_get_width_raw(todraw);
+    ph = pax_buf_get_height_raw(todraw);
 #else
-    pw = gfx->width;
-    ph = gfx->height;
+    pw = todraw->width;
+    ph = todraw->height;
 #endif
 
     if (surface->w == pw && surface->h == ph) {
         // Direct surface update.
         SDL_LockSurface(surface);
-        memcpy(surface->pixels, pax_buf_get_pixels(gfx), pax_buf_get_size(gfx));
+        memcpy(surface->pixels, pax_buf_get_pixels(todraw), pax_buf_get_size(todraw));
         SDL_UnlockSurface(surface);
         SDL_UpdateWindowSurface(window);
     }
@@ -253,7 +271,7 @@ int main(int argc, char **argv) {
                     pax_background(gfx, pgui_get_default_theme()->palette[PGUI_VARIANT_DEFAULT].bg_col);
                 }
                 pgui_redraw(gfx, root, NULL);
-                window_flush(window, gfx);
+                window_flush(window);
             }
             if (resp == PGUI_RESP_CAPTURED_ERR) {
                 printf(":c\n");
@@ -279,7 +297,7 @@ int main(int argc, char **argv) {
             }
         }
         draw();
-        window_flush(window, gfx);
+        window_flush(window);
 #endif
     }
 
@@ -463,10 +481,18 @@ void resized() {
     if (!gfx) {
         gfx = malloc(sizeof(pax_buf_t));
     }
+#ifdef BUFCONV_TEST
+    if (!convbuf) {
+        convbuf = malloc(sizeof(pax_buf_t));
+    }
+    pax_buf_init(gfx, NULL, width, height, BUFCONV_TEST);
+    pax_buf_init(convbuf, NULL, width, height, PAX_BUF_32_8888ARGB);
+#else
     pax_buf_init(gfx, NULL, width, height, PAX_BUF_32_8888ARGB);
+#endif
 #if MODE == GUI
     pgui_calc_layout(pax_buf_get_dims(gfx), root, NULL);
 #endif
     draw();
-    window_flush(window, gfx);
+    window_flush(window);
 }
